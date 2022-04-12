@@ -41,6 +41,7 @@ extern "C" {
 		extern uint32_t cnt_chatter;
 		extern uint32_t button_down;
 		extern uint32_t button_toggle_access;
+		extern uint32_t button_down_access;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -56,9 +57,6 @@ extern "C" {
 		/*
 		 * 1ms (96MHz)*/
 		#define ticks 95999
-		#define RED 0
-		#define GRN 1
-		#define ORN 2
 
 /* USER CODE END EM */
 

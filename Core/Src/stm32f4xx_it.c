@@ -204,13 +204,10 @@ void SysTick_Handler(void)
 void EXTI0_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI0_IRQn 0 */
-	if (button_down = (button_down + 1) % 2){
-		TIM9->PSC = 48000 - 1;//тк нельзя 96000 поставить
-		TIM9->ARR = 2000;
-		TIM9->DIER |= TIM_DIER_UIE; //Разрешения прерывание от таймера
-		TIM9->CR1 |= TIM_CR1_CEN; //Запуск таймера
-		TIM9->SR = 0;
-	}
+	button_down = GPIOA->IDR & 0x00000001;
+	TIM9->DIER |= TIM_DIER_UIE;
+	TIM9->CNT = 0;
+	TIM9->SR;
   /* USER CODE END EXTI0_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(PH0_OSC_IN_Pin);
   /* USER CODE BEGIN EXTI0_IRQn 1 */
@@ -224,8 +221,21 @@ void EXTI0_IRQHandler(void)
 void TIM1_BRK_TIM9_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM1_BRK_TIM9_IRQn 0 */
-
-	toggle_orange();
+	if (button_down){
+		if ((GPIOA->IDR & 0x00000001) == 1)
+			button_down_access = true;
+		else
+			button_down_access = false;
+	}
+	else{
+		if ((GPIOA->IDR & 0x00000001) == 0)
+			button_toggle_access = button_down_access;
+		else
+			button_toggle_access = false;
+		button_down_access = false;
+	}
+//	TIM9->CR1 &= (0xffffffff ^ TIM_CR1_CEN_Msk);
+	TIM9->SR &= ~TIM_SR_UIF;
   /* USER CODE END TIM1_BRK_TIM9_IRQn 0 */
   HAL_TIM_IRQHandler(&htim9);
   /* USER CODE BEGIN TIM1_BRK_TIM9_IRQn 1 */

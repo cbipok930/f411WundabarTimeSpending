@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include"my_lib.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -54,6 +54,7 @@ TIM_HandleTypeDef htim9;
 		uint32_t cnt_chatter;
 		uint32_t button_down;
 		uint32_t button_toggle_access;
+		uint32_t button_down_access;
 
 /* USER CODE END PV */
 
@@ -75,6 +76,9 @@ static void MX_TIM9_Init(void);
 void My_init(){
 	mode_colors = true;
 	button_down = false;
+	button_toggle_access = false;
+	button_down_access = false;
+	cnt_chatter = 0;
 	//LEDs
 	uint32_t k = GPIOD->MODER;
 	k &= 0x00ffffff;
@@ -93,10 +97,11 @@ void My_init(){
 }
 void My_TIM9_init(){
 	TIM9->PSC = 48000 - 1;//тк нельзя 96000 поставить, 0.5 ms
-	TIM9->ARR = 2 * 60;
-	TIM9->DIER |= TIM_DIER_UIE; //Разрешения прерывание от таймера
-	TIM9->CR1 |= TIM_CR1_CEN; //Запуск таймера
-	TIM9->
+	TIM9->ARR = 2 * 100;
+	TIM9->SR = 0;
+	TIM9->CR1 |= TIM_CR1_CEN;
+//	TIM9->DIER |= TIM_DIER_UIE; //Разрешения прерывание от таймера
+//	TIM9->CR1 |= TIM_CR1_CEN; //Запуск таймера
 }
 void toggle_test(){
 	uint32_t k = GPIOD->ODR;
@@ -107,26 +112,6 @@ void toggle_test(){
 	{
 		k|= 0x00008000;
 	}
-	GPIOD->ODR = k;
-}
-void off_led(uint32_t col){
-	uint32_t k = GPIOD->ODR;
-	if (RED == col)
-		k &= 0x0000Bfff;
-	else if(GRN == col)
-		k &= 0x0000efff;
-	else if(ORN == col)
-		k &= 0x0000dfff;
-	GPIOD->ODR = k;
-}
-void on_led(uint32_t col){
-	uint32_t k = GPIOD->ODR;
-	if (RED == col)
-		k|= 0x00004000;
-	else if(GRN == col)
-		k|= 0x00001000;
-	else if(ORN == col)
-		k|= 0x00002000;
 	GPIOD->ODR = k;
 }
 void toggle_orange(){
@@ -157,19 +142,15 @@ int delay(int msec){
 	SysTick->CTRL = 	SYSTICK_CLKSOURCE_HCLK | SysTick_CTRL_TICKINT_Msk | SysTick_CTRL_ENABLE_Msk;
 	SysTick->VAL = 0;
 	SysTick->LOAD = ticks;
-//	SysTick->VAL = ticks;
 	cnt_ms = 0;
-	cnt_chatter = 0;
-	uint32_t button_first = button_down;
 	uint32_t ret = false;
 	while(msec > cnt_ms){
-		if (false == button_down){
-			if (cnt_chatter + 30 < cnt_ms){
-				ret = true;
-				break;
-			}
-			cnt_chatter = cnt_ms;
+		if (button_toggle_access == true && (GPIOA->IDR & 0x00000001) == 0){
+			button_toggle_access = false;
+			ret = true;
+			break;
 		}
+
 	}
 	SysTick->CTRL = 0;
 	return ret;
