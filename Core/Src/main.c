@@ -46,6 +46,7 @@ I2S_HandleTypeDef hi2s3;
 
 SPI_HandleTypeDef hspi1;
 
+TIM_HandleTypeDef htim4;
 TIM_HandleTypeDef htim9;
 
 /* USER CODE BEGIN PV */
@@ -67,6 +68,7 @@ static void MX_I2S2_Init(void);
 static void MX_I2S3_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_TIM9_Init(void);
+static void MX_TIM4_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -81,9 +83,10 @@ void My_init(){
 	cnt_chatter = 0;
 	//LEDs
 	uint32_t k = GPIOD->MODER;
-	k &= 0x00ffffff;
-	k|= 0x55000000;
+	k &= 0xC0ffffff;
+	k|= 0x15000000;
 	GPIOD->MODER = k;
+//	GPIOD->AFR[1] = 0x20000000;
 
 	//USER Button
 	k = GPIOA->MODER;
@@ -102,6 +105,20 @@ void My_TIM9_init(){
 	TIM9->CR1 |= TIM_CR1_CEN;
 //	TIM9->DIER |= TIM_DIER_UIE; //Разрешения прерывание от таймера
 //	TIM9->CR1 |= TIM_CR1_CEN; //Запуск таймера
+}
+void My_TIM4_inti(){
+	TIM4->PSC = 48000 - 1;
+	TIM4->DIER |= TIM_DIER_UIE;
+	TIM4->CR1 |= TIM_CR1_CEN;
+	TIM4->CR1 |= TIM_CR1_ARPE;
+//	 RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM4, ENABLE);
+
+	  /* Enable GPIOD Pins that are used for on board LED's */
+//	  RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOD, ENABLE);
+
+	  //Enabled GPIOB we are going to use PB6 which is linked to TIM4_CH1 according to the
+	  //documentation
+//	  RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);
 }
 void toggle_test(){
 	uint32_t k = GPIOD->ODR;
@@ -183,7 +200,7 @@ int main(void)
   PeriphCommonClock_Config();
 
   /* USER CODE BEGIN SysInit */
-  	  	  My_init();
+//  	  	  My_init();
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -193,8 +210,10 @@ int main(void)
   MX_I2S3_Init();
   MX_SPI1_Init();
   MX_TIM9_Init();
+  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
   My_TIM9_init();
+//  My_TIM4_inti();
 
   /* USER CODE END 2 */
 
@@ -202,6 +221,22 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  HAL_TIM_Base_Start(&htim4);
+//	  TIM_HandleTypeDef htim4;
+	  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_3);
+	  while(1){
+		  /*while(CH3 < 65535){
+			  TIM4->CCR3 = CH3;
+			  CH3+=50;
+			  HAL_Delay(1);
+		  }
+		  while(CH3 > 0){
+			  TIM4->CCR3 = CH3;
+			  CH3 -= 50;
+			  HAL_Delay(1);
+		  }*/
+
+	  }
 	  uint32_t q = SysTick->VAL;
 	  	  uint32_t w = SysTick->CTRL;
 	  	  //common
@@ -489,6 +524,65 @@ static void MX_SPI1_Init(void)
 }
 
 /**
+  * @brief TIM4 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM4_Init(void)
+{
+
+  /* USER CODE BEGIN TIM4_Init 0 */
+
+  /* USER CODE END TIM4_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  /* USER CODE BEGIN TIM4_Init 1 */
+
+  /* USER CODE END TIM4_Init 1 */
+  htim4.Instance = TIM4;
+  htim4.Init.Prescaler = 1000;
+  htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim4.Init.Period = 2000;
+  htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim4, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_Init(&htim4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 60;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim4, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM4_Init 2 */
+
+  /* USER CODE END TIM4_Init 2 */
+  HAL_TIM_MspPostInit(&htim4);
+
+}
+
+/**
   * @brief TIM9 Initialization Function
   * @param None
   * @retval None
@@ -550,8 +644,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(OTG_FS_PowerSwitchOn_GPIO_Port, OTG_FS_PowerSwitchOn_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, LD4_Pin|LD3_Pin|LD5_Pin|LD6_Pin
-                          |Audio_RST_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOD, LD4_Pin|LD3_Pin|LD1_Pin|Audio_RST_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : DATA_Ready_Pin */
   GPIO_InitStruct.Pin = DATA_Ready_Pin;
@@ -585,10 +678,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LD4_Pin LD3_Pin LD5_Pin LD6_Pin
-                           Audio_RST_Pin */
-  GPIO_InitStruct.Pin = LD4_Pin|LD3_Pin|LD5_Pin|LD6_Pin
-                          |Audio_RST_Pin;
+  /*Configure GPIO pins : LD4_Pin LD3_Pin LD1_Pin Audio_RST_Pin */
+  GPIO_InitStruct.Pin = LD4_Pin|LD3_Pin|LD1_Pin|Audio_RST_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -600,8 +691,16 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(VBUS_FS_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : OTG_FS_ID_Pin OTG_FS_DM_Pin OTG_FS_DP_Pin */
-  GPIO_InitStruct.Pin = OTG_FS_ID_Pin|OTG_FS_DM_Pin|OTG_FS_DP_Pin;
+  /*Configure GPIO pin : PA10 */
+  GPIO_InitStruct.Pin = GPIO_PIN_10;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Alternate = GPIO_AF1_TIM1;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : OTG_FS_DM_Pin OTG_FS_DP_Pin */
+  GPIO_InitStruct.Pin = OTG_FS_DM_Pin|OTG_FS_DP_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
