@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include"my_lib.h"
+#include<math.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -56,6 +57,9 @@ TIM_HandleTypeDef htim9;
 		uint32_t button_down;
 		uint32_t button_toggle_access;
 		uint32_t button_down_access;
+		int pwmfuncStepNum;
+		double pwmfuncStep;
+		double pwmfuncArg;
 
 /* USER CODE END PV */
 
@@ -221,10 +225,23 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  HAL_TIM_Base_Start(&htim4);
+	  pwmfuncStepNum = 1000;
+	  pwmfuncStep = (2 * M_PI) / pwmfuncStepNum;
+	  pwmfuncArg = 0;
+	  double pwmlastArg = 0;
+//	  HAL_TIM_Base_Start(&htim4);
+	  HAL_TIM_Base_Start_IT(&htim4);
 //	  TIM_HandleTypeDef htim4;
 	  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_3);
+	  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2); //PB7
 	  while(1){
+		  if (pwmlastArg > 60 * M_PI)
+			  pwmfuncArg = 0;
+		  if (pwmlastArg != pwmfuncArg){
+			  pwmlastArg = pwmfuncArg;
+			  TIM4->CCR3 = (uint32_t)(TIM4->ARR * (0.5 * sin(pwmfuncArg) + 0.5));
+			  TIM4->CCR2 = (uint32_t)(TIM4->ARR * (0.5 * sin(pwmfuncArg) + 0.5));
+		  }
 		  /*while(CH3 < 65535){
 			  TIM4->CCR3 = CH3;
 			  CH3+=50;
@@ -543,9 +560,9 @@ static void MX_TIM4_Init(void)
 
   /* USER CODE END TIM4_Init 1 */
   htim4.Instance = TIM4;
-  htim4.Init.Prescaler = 1000;
+  htim4.Init.Prescaler = 47;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim4.Init.Period = 2000;
+  htim4.Init.Period = 999;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
@@ -568,9 +585,13 @@ static void MX_TIM4_Init(void)
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 60;
+  sConfigOC.Pulse = 0;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim4, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
   if (HAL_TIM_PWM_ConfigChannel(&htim4, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
   {
     Error_Handler();

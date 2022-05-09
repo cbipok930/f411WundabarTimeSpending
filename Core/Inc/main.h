@@ -42,6 +42,9 @@ extern "C" {
 		extern uint32_t button_down;
 		extern uint32_t button_toggle_access;
 		extern uint32_t button_down_access;
+		extern int pwmfuncStepNum;
+		extern double pwmfuncStep;
+		extern double pwmfuncArg;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
