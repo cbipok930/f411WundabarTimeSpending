@@ -41,6 +41,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
+ extern int ADC_VAL[2];
 
 /* USER CODE END PV */
 
@@ -55,6 +56,7 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
+extern ADC_HandleTypeDef hadc1;
 extern TIM_HandleTypeDef htim4;
 extern TIM_HandleTypeDef htim9;
 /* USER CODE BEGIN EV */
@@ -210,10 +212,26 @@ void EXTI0_IRQHandler(void)
 	TIM9->CNT = 0;
 	TIM9->SR;
   /* USER CODE END EXTI0_IRQn 0 */
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0);
+  HAL_GPIO_EXTI_IRQHandler(PH0_OSC_IN_Pin);
   /* USER CODE BEGIN EXTI0_IRQn 1 */
 
   /* USER CODE END EXTI0_IRQn 1 */
+}
+
+/**
+  * @brief This function handles ADC1 global interrupt.
+  */
+void ADC_IRQHandler(void)
+{
+  /* USER CODE BEGIN ADC_IRQn 0 */
+	ADC_VAL[0] = ADC1->JDR1;
+  /* USER CODE END ADC_IRQn 0 */
+  HAL_ADC_IRQHandler(&hadc1);
+  /* USER CODE BEGIN ADC_IRQn 1 */
+  ADC1->CR2 |= ADC_CR2_ADON;
+  ADC1->CR1 |= ADC_CR1_JEOCIE;
+  ADC1->CR2 |= ADC_CR2_JSWSTART;
+  /* USER CODE END ADC_IRQn 1 */
 }
 
 /**
