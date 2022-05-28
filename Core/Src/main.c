@@ -52,6 +52,8 @@ SPI_HandleTypeDef hspi1;
 TIM_HandleTypeDef htim4;
 TIM_HandleTypeDef htim9;
 
+UART_HandleTypeDef huart2;
+
 /* USER CODE BEGIN PV */
 		uint8_t mode_colors;
 		uint32_t cnt_ms;
@@ -63,6 +65,7 @@ TIM_HandleTypeDef htim9;
 		double pwmfuncStep;
 		double pwmfuncArg;
 		int ADC_VAL[2];
+		int x_uart;
 
 /* USER CODE END PV */
 
@@ -77,6 +80,7 @@ static void MX_SPI1_Init(void);
 static void MX_TIM9_Init(void);
 static void MX_TIM4_Init(void);
 static void MX_ADC1_Init(void);
+static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -220,6 +224,7 @@ int main(void)
   MX_TIM9_Init();
   MX_TIM4_Init();
   MX_ADC1_Init();
+  MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
   My_TIM9_init();
 //  My_TIM4_inti();
@@ -228,8 +233,17 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  uint8_t data = 33;
   while (1)
   {
+	  while(1){
+		  USART2->DR = data;
+		  if (button_down){
+			  if (USART2->SR & (0xffffffff & (1 >> USART_SR_TC_Pos)) == 1){
+
+			  }
+		  }
+	  }
 	  pwmfuncStepNum = 1000;
 	  pwmfuncStep = (2 * M_PI) / pwmfuncStepNum;
 	  pwmfuncArg = 0;
@@ -252,7 +266,9 @@ int main(void)
 			  TIM4->CCR3 = (uint32_t)(TIM4->ARR * (0.5 * sin(pwmfuncArg) + 0.5));
 			  TIM4->CCR2 = (uint32_t)(TIM4->ARR * (0.5 * sin(pwmfuncArg) + 0.5));
 		  }
-		  TIM4->CCR4 = (int)(((double)ADC_VAL[0]) * 0.244);
+//		  TIM4->CCR4 = (int)(((double)ADC_VAL[0]) * 0.244);
+		  double val = (double)(ADC_VAL[0]) / 4096;
+		  TIM4->CCR4 = (int)((double)(TIM4->ARR) * val);
 		  /*while(CH3 < 65535){
 			  TIM4->CCR3 = CH3;
 			  CH3+=50;
@@ -702,6 +718,39 @@ static void MX_TIM9_Init(void)
   /* USER CODE BEGIN TIM9_Init 2 */
 
   /* USER CODE END TIM9_Init 2 */
+
+}
+
+/**
+  * @brief USART2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART2_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART2_Init 0 */
+
+  /* USER CODE END USART2_Init 0 */
+
+  /* USER CODE BEGIN USART2_Init 1 */
+
+  /* USER CODE END USART2_Init 1 */
+  huart2.Instance = USART2;
+  huart2.Init.BaudRate = 115200;
+  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+  huart2.Init.StopBits = UART_STOPBITS_1;
+  huart2.Init.Parity = UART_PARITY_NONE;
+  huart2.Init.Mode = UART_MODE_TX_RX;
+  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART2_Init 2 */
+
+  /* USER CODE END USART2_Init 2 */
 
 }
 
